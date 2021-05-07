@@ -196,6 +196,7 @@ if __name__ == "__main__":
                       help="number of LEDs attached", type="int", default=60)
     parser.add_option("-b", action="store_true", default="True", dest="buffered")
     parser.add_option("-u", action="store_false", dest="buffered")
+    parser.add_option("--off", action="store_false", default="False", dest="disablelights")
 
     (options, args) = parser.parse_args()
 
@@ -204,14 +205,14 @@ if __name__ == "__main__":
     while True:
         led_count     = 60
         rgb_max       = 100
-        pixel_half_on = [rgb_max, rgb_max, rgb_max]
+        pixel_half_on = [rgb_max, 0, 0]
         pixel_off     = [0, 0, 0]
 
         def shuttle_extend(bb, n=1,step=2):
             for i in range(n):
                 bb.clear_all()
                 for s in range(0,led_count,step):
-                    pixel_random_on = [randint(0,rgb_max), randint(0,rgb_max), randint(0,rgb_max)]
+                    pixel_random_on = [randint(30,rgb_max), randint(0,10), randint(0,10)]
                     for t in range(s+1):
                         pixel_list = map(lambda x: pixel_random_on if x<=t else pixel_off, range(led_count))
                         bb.send_list(pixel_list)
@@ -275,7 +276,7 @@ if __name__ == "__main__":
             h0 = 0
             max_h = 60
             g  = -0.0025
-            cor = 0.99  
+            cor = 0.99
             line =  [None] * led_count # to hold all the particles and empty spaces: [ None, None, [vel, height], None, ..., None, [vel, height], ...]
 
             for x in range(num_particles): # prime it with particles, each with [velocity,height]
@@ -284,7 +285,7 @@ if __name__ == "__main__":
 
             loop = 0
             skip_next = False
-            while loop <= max_loops:  
+            while loop <= max_loops:
                 loop += 1
                 for i in range(len(line)): # scan from low to high, adjusting one pixel at a time.
                     if line[i] is None or skip_next:
@@ -304,7 +305,7 @@ if __name__ == "__main__":
                         elif (int(h) != i) and (line[int(h)] is not None): # is a collsion
                             other_i = int(h)
                             h = line[i][1] # remove prev vel contrib to ensure stay in same pixel
-                            v = line[i][0] 
+                            v = line[i][0]
                             # swap vels (simple physics of direct elastic collision between two identical objects)
                             v, line[other_i][0] = line[other_i][0] * cor, v * cor
 
@@ -321,5 +322,7 @@ if __name__ == "__main__":
                 pixel_list = map(lambda x: pixel_half_on if (x is not None) else pixel_off, reversed(line))
                 bb.send_list(pixel_list)
 
-
-        multiple_impulses(bt)
+        if options.disablelights:
+            bt.clear_all()
+        else:
+            shuttle_extend(bt)
